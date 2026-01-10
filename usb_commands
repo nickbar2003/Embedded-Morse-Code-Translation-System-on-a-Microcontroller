@@ -1,0 +1,2 @@
+usbipd list
+usbipd attach --wsl --busid <instert number ex: 1-4>
