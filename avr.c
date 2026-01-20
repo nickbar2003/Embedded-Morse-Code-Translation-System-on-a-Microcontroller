@@ -115,6 +115,9 @@ int main(void)
     // Port Direction Register 0 = input pin; 1 = output pin
 
     // Set PORTB4 to output
+    DDRB = DDRB | (1 << DDB1);
+
+    // Set PORTB4 to output
     DDRB = DDRB | (1 << DDB4);
 
     // Set PORTB3 to output
@@ -128,6 +131,7 @@ int main(void)
 
     // Set PORTD4 is input by default
     DDRD = DDRD & ~(1 << DDD4);
+
 
     /*
     Port to hardware correspondance:
@@ -155,122 +159,138 @@ int main(void)
 
         if(PIND & (1 << PD2)) 
         {
-            _delay_ms(225); // Wait after inital click
+            _delay_ms(300); // Wait after inital click
 
             if(PIND & (1 << PD2)) 
             {
                 while(!(UCSR0A & (1 << UDRE0))); // Wait for UDR empty
-                UDR0 = ' '; 
+
+                PORTB = PORTB | (1 << PORTB0); 
+
+                _delay_ms(100); // let LED shine
+
+                PORTB = PORTB & ~(1 << PORTB0); 
+
+                _delay_ms(100); // let LED shine
+
+                PORTB = PORTB | (1 << PORTB0); 
+
+                _delay_ms(100); // let LED shine
+
+                PORTB = PORTB & ~(1 << PORTB0); 
             }
-
-            PORTB = PORTB | (1 << PORTB0); 
-
-            _delay_ms(200); // let LED shine
-
-            PORTB = PORTB & ~(1 << PORTB0); 
-
-            switch(MCDB)
+            else if (~PIND & (1 << PD2))
             {
-                
-                case A:
-                    letter = 'A';
-                    break;
-                case B:
-                    letter = 'B';
-                    break;
-                case C:
-                    letter = 'C';
-                    break;
-                case D:
-                    letter = 'D';
-                    break;
-                case E:
-                    letter = 'E';
-                    break;
-                case F:
-                    letter = 'F';
-                    break;
-                case G:
-                    letter = 'G';
-                    break;
-                case H:
-                    letter = 'H';
-                    break;
-                case I:
-                    letter = 'I';
-                    break;
-                case J:
-                    letter = 'J';
-                    break;
-                case K:
-                    letter = 'K';
-                    break;
-                case L:
-                    letter = 'L';
-                    break;
-                case M:
-                    letter = 'M';
-                    break;
-                case N:
-                    letter = 'N';
-                    break;
-                case O:
-                    letter = 'O';
-                    break;
-                case P:
-                    letter = 'P';
-                    break;
-                case EMPTY:
-                    letter = '#';
-                    break;
+                PORTB = PORTB | (1 << PORTB0); 
+
+                _delay_ms(200); // let LED shine
+
+                PORTB = PORTB & ~(1 << PORTB0); 
+
+                switch(MCDB)
+                {
+                    
+                    case A:
+                        letter = 'A';
+                        break;
+                    case B:
+                        letter = 'B';
+                        break;
+                    case C:
+                        letter = 'C';
+                        break;
+                    case D:
+                        letter = 'D';
+                        break;
+                    case E:
+                        letter = 'E';
+                        break;
+                    case F:
+                        letter = 'F';
+                        break;
+                    case G:
+                        letter = 'G';
+                        break;
+                    case H:
+                        letter = 'H';
+                        break;
+                    case I:
+                        letter = 'I';
+                        break;
+                    case J:
+                        letter = 'J';
+                        break;
+                    case K:
+                        letter = 'K';
+                        break;
+                    case L:
+                        letter = 'L';
+                        break;
+                    case M:
+                        letter = 'M';
+                        break;
+                    case N:
+                        letter = 'N';
+                        break;
+                    case O:
+                        letter = 'O';
+                        break;
+                    case P:
+                        letter = 'P';
+                        break;
+                    case EMPTY:
+                        letter = '#';
+                        break;
+                }
+                switch(MCDB)
+                {
+                    case Q:
+                        letter = 'Q';
+                        break;
+                    case R:
+                        letter = 'R';
+                        break;
+                    case S:
+                        letter = 'S';
+                        break;
+                    case T:
+                        letter = 'T';
+                        break;
+                    case U:
+                        letter = 'U';
+                        break;
+                    case V:
+                        letter = 'V';
+                        break;
+                    case W:
+                        letter = 'W';
+                        break;
+                    case X:
+                        letter = 'X';
+                        break;
+                    case Y:
+                        letter = 'Y';
+                        break;
+                    case Z:
+                        letter = 'Z';
+                        break;
+                    case SPACE:
+                        letter = ' ';
+                        break;
+                    case EMPTY:
+                        letter = '#';
+                        break;
+                }
+
+
+
+                while(!(UCSR0A & (1 << UDRE0))); // Wait for UDR empty
+                UDR0 = letter; 
+
+                MCDB = 0b00000000;
+                data_size_mask = 0b00000000;
+
             }
-            switch(MCDB)
-            {
-                case Q:
-                    letter = 'Q';
-                    break;
-                case R:
-                    letter = 'R';
-                    break;
-                case S:
-                    letter = 'S';
-                    break;
-                case T:
-                    letter = 'T';
-                    break;
-                case U:
-                    letter = 'U';
-                    break;
-                case V:
-                    letter = 'V';
-                    break;
-                case W:
-                    letter = 'W';
-                    break;
-                case X:
-                    letter = 'X';
-                    break;
-                case Y:
-                    letter = 'Y';
-                    break;
-                case Z:
-                    letter = 'Z';
-                    break;
-                case SPACE:
-                    letter = ' ';
-                    break;
-                case EMPTY:
-                    letter = '#';
-                    break;
-            }
-
-
-
-            while(!(UCSR0A & (1 << UDRE0))); // Wait for UDR empty
-            UDR0 = letter; 
-
-            MCDB = 0b00000000;
-            data_size_mask = 0b00000000;
 
 
 
@@ -284,13 +304,14 @@ int main(void)
         {
             fresh_click = 0; // no longer a new click
 
-            _delay_ms(225); // Wait after inital click
+            _delay_ms(200); // Wait after inital click
             
 
             if(~PIND & (1 << PD4)) // button no longer depressed == Short button press
             { 
 
                 PORTB = PORTB | (1 << PORTB4); // Turn on red LED
+
 
                 data_size_mask = MCDB; 
                 data_size_mask = data_size_mask >> 5; 
@@ -310,6 +331,7 @@ int main(void)
             {
                 PORTB = PORTB | (1 << PORTB3); // Turn on blue LED
 
+
                 data_size_mask = MCDB; 
                 data_size_mask = data_size_mask >> 5; 
 
@@ -320,7 +342,7 @@ int main(void)
                 while(!(UCSR0A & (1 << UDRE0))); // Wait for UDR empty
                 UDR0 = '-'; // Transmit 'L'
 
-                _delay_ms(200); // let LED shine
+                _delay_ms(400); // let LED shine
 
                 PORTB = PORTB & ~(1 << PORTB3); // turn LED off
             }
