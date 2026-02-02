@@ -1,10 +1,4 @@
-#include <stdio.h>
-#include <avr/io.h>
-#include <util/delay.h>
-
-#define F_CPU 16000000 // System oscillator clock frequency in MHz
-#define BAUD 9600 // Bits per second for Tx and Rx
-
+#include "avr.h"
 // My microcontroller board has an ATmega328P microcontroller //
 // For all w/r operations I am referencing the ATmega328P data sheet // 
 
@@ -13,61 +7,183 @@
 // Arduion UNO R3 pinout diagram: https://docs.arduino.cc/resources/pinouts/A000066-full-pinout.pdf
 
 
-
-enum morse_translation
-{
-    EMPTY = 0b00000000,
-
-    // 1 data bits
-    E = 0b00100000,
-    T = 0b00100001,
-                 
-    // 2 data bit,s
-    A = 0b01000010,
-    I = 0b01000000,
-    M = 0b01000011,
-    N = 0b01000001,
-                 
-    // 3 data bit,s
-    D = 0b01100001,
-    G = 0b01100011,
-    K = 0b01100101,
-    O = 0b01100111,
-    R = 0b01100010,
-    S = 0b01100000,
-    U = 0b01100100,
-    W = 0b01100110,
-                 
-    // 4 data bit,s
-    B = 0b10000001,
-    C = 0b10000101,
-    F = 0b10000100,
-    H = 0b10000000,
-    J = 0b10001110,
-    L = 0b10000010,
-    P = 0b10000110,
-    Q = 0b10001011,
-    V = 0b10001000,
-    X = 0b10001001,
-    Y = 0b10001101,
-    Z = 0b10000011,
-    SPACE = 0b10001010
-
-    // 5 data bits
-
-
-};
-
-
-
-
 int main(void)
 {
+    /*
+    Port to hardware correspondance:
+    (See Adrunio Uno R3 pinout diagram linked above)
+
+    NAME   | PCB Pin NAME   | Hardware Function
+    --------------------------------------------
+    PORTB4 | Digital Pin 12 | Powering a Red LED
+    ---------------------------------------------
+    PORTB3 | Digital Pin 11 | Powering a Blue LED
+    ---------------------------------------------
+    PORTD4 | Digital Pin 4 | Recieving input from button
+    
+    */
+
+
+    uint8_t fresh_click = 1; // 1 for fresh, 0 for stale
+
+    enum morse_translation MCDB = 0b00000000; // Morse Code Data Buffer
+    uint8_t data_size_mask = 0b00000000; // Used in tandem with MCDB
+    char letter = ' ';
 
 
     // // //  USART0 CONFIGURATION // // //
-    
+    USART_config();
 
+
+    // // // PORT DIRECTION CONFIGURATION // // //
+    pin_direction_config();
+
+
+    start_up_tune();
+
+    while(1)
+    {
+
+        if(PIND & (1 << PD2)) // Button A clicked
+        {
+            _delay_ms(200); // Pause to discern length of input
+
+
+
+            if(PIND & (1 << PD2)) // Long input
+            {
+                while(!(UCSR0A & (1 << UDRE0))); // Wait for UDR empty
+
+                PORTB = PORTB | (1 << PORTB0); 
+
+                _delay_ms(100); // let LED shine
+
+                PORTB = PORTB & ~(1 << PORTB0); 
+
+                _delay_ms(100); // let LED shine
+
+                PORTB = PORTB | (1 << PORTB0); 
+
+                _delay_ms(100); // let LED shine
+
+                PORTB = PORTB & ~(1 << PORTB0); 
+            }
+            else if (~PIND & (1 << PD2)) // Short input
+            {
+                PORTB = PORTB | (1 << PORTB0); 
+
+                for(int i = 0; i < 400; i++)
+                {
+                    PORTB = PORTB | (1 << PORTB1);
+                    _delay_us(250);
+                    PORTB = PORTB & ~(1 << PORTB1);
+                    _delay_us(250);
+                }
+
+                PORTB = PORTB & ~(1 << PORTB0); 
+
+
+                letter = translate_letter(MCDB);
+
+
+                while(!(UCSR0A & (1 << UDRE0))); // Wait for UDR empty
+                UDR0 = letter; // Transmit English char
+
+                MCDB = 0b00000000; // Wipe buffer
+                data_size_mask = 0b00000000; // Wipe mask
+
+            }
+
+
+
+
+        }
+
+
+
+
+        if(PIND & (1 << PD4) && fresh_click) // button B clicked 
+        {
+            fresh_click = 0; // no longer a new click
+
+            _delay_ms(200); // Wait after inital click to discern length
+
+
+            if(~PIND & (1 << PD4)) // button B no longer depressed == Short button press
+            { 
+
+
+                data_size_mask = MCDB; 
+                data_size_mask = data_size_mask >> 5; 
+
+                MCDB = MCDB & ~(1 << data_size_mask); 
+                MCDB += 0b00100000;
+
+                while(!(UCSR0A & (1 << UDRE0))); // Wait for UDR empty
+                UDR0 = '.'; 
+
+                PORTB = PORTB | (1 << PORTB4); // Turn on red LED
+
+                for(int i = 0; i < 200; i++)
+                {
+                    PORTB = PORTB | (1 << PORTB1);
+                    _delay_us(600);
+                    PORTB = PORTB & ~(1 << PORTB1);
+                    _delay_us(400);
+                }
+
+                PORTB = PORTB & ~(1 << PORTB4); // turn LED off
+
+            }
+            else if(PIND & (1 << PD4)) // button still pressed == long button press
+            {
+
+
+                data_size_mask = MCDB; 
+                data_size_mask = data_size_mask >> 5; 
+
+                MCDB = MCDB | (1 << data_size_mask); 
+                MCDB += 0b00100000;
+
+
+                while(!(UCSR0A & (1 << UDRE0))); // Wait for UDR empty
+                UDR0 = '-'; 
+
+                PORTB = PORTB | (1 << PORTB3); // Turn on blue LED
+
+                for(int i = 0; i < 400; i++)
+                {
+                    PORTB = PORTB | (1 << PORTB1);
+                    _delay_us(600);
+                    PORTB = PORTB & ~(1 << PORTB1);
+                    _delay_us(400);
+                }
+
+                PORTB = PORTB & ~(1 << PORTB3); // turn LED off
+            }
+        }
+
+
+        // If here then:
+        // Button has either not been pressed, 
+        // or input has already been serviced
+        if(~PIND & (1 << PD4)) // Button is unpressed
+        {
+            _delay_ms(10);
+            fresh_click = 1; // Ready to service new click
+        }
+    }
+
+    return 0;
+    
+}
+
+
+
+void USART_config(void)
+{
+    // // //  USART0 CONFIGURATION // // //
+    
     /* 
     
     Desired Settings for USART0 :
@@ -107,10 +223,13 @@ int main(void)
     // Enable transmission 
     UCSR0B = UCSR0B | (1 << TXEN0);
 
+    return;
+}
 
 
+void pin_direction_config(void)
+{
     // // // PORT DIRECTION CONFIGURATION // // //
-
     
     // Port Direction Register 0 = input pin; 1 = output pin
 
@@ -132,239 +251,135 @@ int main(void)
     // Set PORTD4 is input by default
     DDRD = DDRD & ~(1 << DDD4);
 
-
-    /*
-    Port to hardware correspondance:
-    (See Adrunio Uno R3 pinout diagram linked above)
-
-    NAME   | PCB Pin NAME   | Hardware Function
-    --------------------------------------------
-    PORTB4 | Digital Pin 12 | Powering a Red LED
-    ---------------------------------------------
-    PORTB3 | Digital Pin 11 | Powering a Blue LED
-    ---------------------------------------------
-    PORTD4 | Digital Pin 4 | Recieving input from button
-    
-    */
-
-
-    uint8_t fresh_click = 1; // 1 for fresh, 0 for stale
-
-    enum morse_translation MCDB = 0b00000000;
-    uint8_t data_size_mask = 0b00000000;
-    char letter = ' ';
-
-    while(1)
-    {
-
-        if(PIND & (1 << PD2)) 
-        {
-            _delay_ms(300); // Wait after inital click
-
-            if(PIND & (1 << PD2)) 
-            {
-                while(!(UCSR0A & (1 << UDRE0))); // Wait for UDR empty
-
-                PORTB = PORTB | (1 << PORTB0); 
-
-                _delay_ms(100); // let LED shine
-
-                PORTB = PORTB & ~(1 << PORTB0); 
-
-                _delay_ms(100); // let LED shine
-
-                PORTB = PORTB | (1 << PORTB0); 
-
-                _delay_ms(100); // let LED shine
-
-                PORTB = PORTB & ~(1 << PORTB0); 
-            }
-            else if (~PIND & (1 << PD2))
-            {
-                PORTB = PORTB | (1 << PORTB0); 
-
-                _delay_ms(200); // let LED shine
-
-                PORTB = PORTB & ~(1 << PORTB0); 
-
-                switch(MCDB)
-                {
-                    
-                    case A:
-                        letter = 'A';
-                        break;
-                    case B:
-                        letter = 'B';
-                        break;
-                    case C:
-                        letter = 'C';
-                        break;
-                    case D:
-                        letter = 'D';
-                        break;
-                    case E:
-                        letter = 'E';
-                        break;
-                    case F:
-                        letter = 'F';
-                        break;
-                    case G:
-                        letter = 'G';
-                        break;
-                    case H:
-                        letter = 'H';
-                        break;
-                    case I:
-                        letter = 'I';
-                        break;
-                    case J:
-                        letter = 'J';
-                        break;
-                    case K:
-                        letter = 'K';
-                        break;
-                    case L:
-                        letter = 'L';
-                        break;
-                    case M:
-                        letter = 'M';
-                        break;
-                    case N:
-                        letter = 'N';
-                        break;
-                    case O:
-                        letter = 'O';
-                        break;
-                    case P:
-                        letter = 'P';
-                        break;
-                    case EMPTY:
-                        letter = '#';
-                        break;
-                }
-                switch(MCDB)
-                {
-                    case Q:
-                        letter = 'Q';
-                        break;
-                    case R:
-                        letter = 'R';
-                        break;
-                    case S:
-                        letter = 'S';
-                        break;
-                    case T:
-                        letter = 'T';
-                        break;
-                    case U:
-                        letter = 'U';
-                        break;
-                    case V:
-                        letter = 'V';
-                        break;
-                    case W:
-                        letter = 'W';
-                        break;
-                    case X:
-                        letter = 'X';
-                        break;
-                    case Y:
-                        letter = 'Y';
-                        break;
-                    case Z:
-                        letter = 'Z';
-                        break;
-                    case SPACE:
-                        letter = ' ';
-                        break;
-                    case EMPTY:
-                        letter = '#';
-                        break;
-                }
-
-
-
-                while(!(UCSR0A & (1 << UDRE0))); // Wait for UDR empty
-                UDR0 = letter; 
-
-                MCDB = 0b00000000;
-                data_size_mask = 0b00000000;
-
-            }
-
-
-
-
-        }
-
-
-
-
-        if(PIND & (1 << PD4) && fresh_click) // button is depressed 
-        {
-            fresh_click = 0; // no longer a new click
-
-            _delay_ms(200); // Wait after inital click
-            
-
-            if(~PIND & (1 << PD4)) // button no longer depressed == Short button press
-            { 
-
-                PORTB = PORTB | (1 << PORTB4); // Turn on red LED
-
-
-                data_size_mask = MCDB; 
-                data_size_mask = data_size_mask >> 5; 
-
-                MCDB = MCDB & ~(1 << data_size_mask); 
-                MCDB += 0b00100000;
-
-                while(!(UCSR0A & (1 << UDRE0))); // Wait for UDR empty
-                UDR0 = '.'; // Transmit 'S'
-
-                _delay_ms(200); // let LED shine 
-
-                PORTB = PORTB & ~(1 << PORTB4); // turn LED off
-
-            }
-            else if(PIND & (1 << PD4)) // button still pressed == long button press
-            {
-                PORTB = PORTB | (1 << PORTB3); // Turn on blue LED
-
-
-                data_size_mask = MCDB; 
-                data_size_mask = data_size_mask >> 5; 
-
-                MCDB = MCDB | (1 << data_size_mask); 
-                MCDB += 0b00100000;
-
-
-                while(!(UCSR0A & (1 << UDRE0))); // Wait for UDR empty
-                UDR0 = '-'; // Transmit 'L'
-
-                _delay_ms(400); // let LED shine
-
-                PORTB = PORTB & ~(1 << PORTB3); // turn LED off
-            }
-        }
-
-
-        // Button has either not pressed, 
-        // or input has already been serviced
-
-        if(~PIND & (1 << PD4)) // Button is unpressed
-        {
-            _delay_ms(50);
-            fresh_click = 1; // Ready to service new click
-        }
-    }
-
-    return 0;
-    
 }
 
+char translate_letter(enum morse_translation buffer)
+{
 
+    switch(buffer)
+    {
+        
+        case A:
+            return 'A';
+            break;
+        case B:
+            return 'B';
+            break;
+        case C:
+            return 'C';
+            break;
+        case D:
+            return 'D';
+            break;
+        case E:
+            return 'E';
+            break;
+        case F:
+            return 'F';
+            break;
+        case G:
+            return 'G';
+            break;
+        case H:
+            return 'H';
+            break;
+        case I:
+            return 'I';
+            break;
+        case J:
+            return 'J';
+            break;
+        case K:
+            return 'K';
+            break;
+        case L:
+            return 'L';
+            break;
+        case M:
+            return 'M';
+            break;
+        case N:
+            return 'N';
+            break;
+        case O:
+            return 'O';
+            break;
+        case P:
+            return 'P';
+            break;
+        case EMPTY:
+            return '#';
+            break;
+    }
+    switch(buffer)
+    {
+        case Q:
+            return 'Q';
+            break;
+        case R:
+            return 'R';
+            break;
+        case S:
+            return 'S';
+            break;
+        case T:
+            return 'T';
+            break;
+        case U:
+            return 'U';
+            break;
+        case V:
+            return 'V';
+            break;
+        case W:
+            return 'W';
+            break;
+        case X:
+            return 'X';
+            break;
+        case Y:
+            return 'Y';
+            break;
+        case Z:
+            return 'Z';
+            break;
+        case SPACE:
+            return ' ';
+            break;
+        case EMPTY:
+            return '#';
+            break;
+    }
+}
 
-
-
-
+void start_up_tune(void)
+{
+    for (int i = 0; i < 200; i++)
+    {
+        PORTB |=  (1 << PORTB1);
+        _delay_us(100);
+        PORTB &= ~(1 << PORTB1);
+        _delay_us(100);
+    }
+    for (int i = 0; i < 300; i++)
+    {
+        PORTB |=  (1 << PORTB1);
+        _delay_us(200);
+        PORTB &= ~(1 << PORTB1);
+        _delay_us(200);
+    }
+    for (int i = 0; i < 500; i++)
+    {
+        PORTB |=  (1 << PORTB1);
+        _delay_us(400);
+        PORTB &= ~(1 << PORTB1);
+        _delay_us(400);
+    }
+    for (int i = 0; i < 600; i++)
+    {
+        PORTB |=  (1 << PORTB1);
+        _delay_us(600);
+        PORTB &= ~(1 << PORTB1);
+        _delay_us(600);
+    }
+}

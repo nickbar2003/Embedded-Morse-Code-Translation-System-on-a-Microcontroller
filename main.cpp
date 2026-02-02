@@ -19,7 +19,7 @@ Link to his serial port project: https://github.com/gbmhunter/CppLinuxSerial
 #include <string>
 #include <thread>
 
-#define LOOP_DELAY_MS 30
+#define LOOP_DELAY_MS 15
 
 using namespace std::chrono;
 using namespace std::this_thread;
@@ -80,8 +80,14 @@ int main(void)
         {
             morse_message += serial_data;
         }
-        else if( serial_data >= "A" && serial_data <= "Z" || serial_data == " ")
+        else if( serial_data >= "A" && serial_data <= "Z" )
         {
+            morse_message += " ";
+            english_message += serial_data;
+        }
+        else if(serial_data == " ")
+        {
+            morse_message += " | ";
             english_message += serial_data;
         }
 
@@ -96,51 +102,70 @@ int main(void)
 
 void print_context()
 {
+
+
+    uint8_t space_after_message = 0;
+    uint8_t num_rows = 25;
+    uint8_t num_columns = 90;
+    uint8_t morse_pos = num_rows / 6;
+    uint8_t english_pos = morse_pos * 4;
+
     std::cout << "\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n";
 
 
+    for(int r = 0; r <= num_rows; r++)
+    {
+
+        if(r == morse_pos)
+        {
+            space_after_message = num_columns - 10 - morse_message.size();
 
 
-    
-    std::cout << "=_=_=_=_=_=_=_=_=_=_=_=_=_=_=_=_=_=_=_=_=_=_=_=_=_=_=_=_=_=_=_=_=_=_=_=_=_=_=_=_=_=_=_=_=_=_=_= |\n";
-        std::cout << "Morse: " + morse_message + "\n";
-        std::cout << "\n\n\n";
-        std::cout << "English: " + english_message + "\n";
-        std::cout << "\n\n\n";
-    std::cout << "=_=_=_=_=_=_=_=_=_=_=_=_=_=_=_=_=_=_=_=_=_=_=_=_=_=_=_=_=_=_=_=_=_=_=_=_=_=_=_=_=_=_=_=_=_=_=_= |\n";
+            std::cout << "| Morse: " << morse_message;
 
-    // std::cout << "Morse: " + morse_message + "\n";
-    // std::cout << "\n\n\n";
-    // std::cout << "English: " + english_message + "\n";
+            for (int i = 0; i <= space_after_message; i++ ) 
+            {
+                std::cout << " ";
+            
+            }
+            std::cout << "|";
+
+        }
+        else if(r == english_pos)
+        {
+            space_after_message = num_columns - 12 - english_message.size();
+
+            std::cout << "| English: " << english_message;
+
+            for (int i = 0; i <= space_after_message; i++ ) 
+            {
+                std::cout << " ";
+            
+            }
+            std::cout << "|";
 
 
-    // std::cout << "\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n";
-    // std::cout << "=_=_=_=_=_=_=_=_=_=_=_=_=_=_=_=_=_=_=_=_=_=_=_=_=_=_=_=_=_=_=_=_=_=_=_=_=_=_=_=_=_=_=_=_=_=_=_= |\n";
-    // std::cout << "\t\t\t\t\t\t\t\t\t\t\t\t|\n";
-    // std::cout << "Morse: " + morse_message;
-    // std::cout << "\t\t\t\t\t\t\t\t\t\t\t\t|\n";
-    // std::cout << "\t\t\t\t\t\t\t\t\t\t\t\t|\n";
-    // std::cout << "\t\t\t\t\t\t\t\t\t\t\t\t|\n";
-    // std::cout << "\t\t\t\t\t\t\t\t\t\t\t\t|\n";
-    // std::cout << "\t\t\t\t\t\t\t\t\t\t\t\t|\n";
-    // std::cout << "\t\t\t\t\t\t\t\t\t\t\t\t|\n";
-    // std::cout << "\t\t\t\t\t\t\t\t\t\t\t\t|\n";
-    // std::cout << "\t\t\t\t\t\t\t\t\t\t\t\t|\n";
-    // std::cout << "\t\t\t\t\t\t\t\t\t\t\t\t|\n";
-    // std::cout << "------------------------------------------------------------------------------------------------|\n";
-    // std::cout << "English: " + english_message;
-    // std::cout << "\t\t\t\t\t\t\t\t\t\t\t|\n";
-    // std::cout << "\t\t\t\t\t\t\t\t\t\t\t\t|\n";
-    // std::cout << "\t\t\t\t\t\t\t\t\t\t\t\t|\n";
-    // std::cout << "\t\t\t\t\t\t\t\t\t\t\t\t|\n";
-    // std::cout << "\t\t\t\t\t\t\t\t\t\t\t\t|\n";
-    // std::cout << "\t\t\t\t\t\t\t\t\t\t\t\t|\n";
-    // std::cout << "\t\t\t\t\t\t\t\t\t\t\t\t|\n";
-    // std::cout << "\t\t\t\t\t\t\t\t\t\t\t\t|\n";
-    // std::cout << "\t\t\t\t\t\t\t\t\t\t\t\t|\n";
-    // std::cout << "=_=_=_=_=_=_=_=_=_=_=_=_=_=_=_=_=_=_=_=_=_=_=_=_=_=_=_=_=_=_=_=_=_=_=_=_=_=_=_=_=_=_=_=_=_=_=_= |\n";
-    // std::cout << "\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n";
-    // std::cout << "\n\n\n\n\n\n\n\n\n\n\n\n\n";
+        }
+        else if(r == 0 || r == num_rows)
+        {
+            std::cout << "|-----------------------------------------------------------------------------------------|";
+
+        }
+        else if(r == num_rows / 2)
+        {
+            std::cout << "|.........................................................................................|";
+
+        }
+        else 
+        {
+            std::cout << "|                                                                                         |";
+
+        }
+        
+
+        std::cout << "\n";
+    }
+
 
 }
 

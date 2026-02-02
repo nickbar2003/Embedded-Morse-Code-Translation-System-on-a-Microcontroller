@@ -12,6 +12,9 @@
 //
 
 
+void short_tone(void);
+void long_tone(void);
+
 int main(void)
 {
     // Port Direction Register 0 = input; 1 = output
@@ -36,28 +39,48 @@ int main(void)
     {
 
 
+    for(int i = 0; i < 100; i++)
+    {
+    // ●
+    PORTB |= (1 << PORTB1);
+    _delay_us(400);
+    PORTB &= ~(1 << PORTB1);
+    _delay_us(200);
+
+    }
+    for(int i = 0; i < 100; i++)
+    {
+    // ▬
+    PORTB |= (1 << PORTB1);
+    _delay_us(1200);
+    PORTB &= ~(1 << PORTB1);
+    _delay_us(300);
+
+    }
+    for(int i = 0; i < 100; i++)
+    {
+    // ●
+    PORTB |= (1 << PORTB1);
+    _delay_us(400);
+    PORTB &= ~(1 << PORTB1);
+    _delay_us(800);
+
+    }
 
 
-        if(PIND & (1 << PD4))
-        {
-            // for(uint8_t i = 0; i < 500; i++)
-            // {
-                PORTB = PORTB | (1 << PORTB1);
-                _delay_us(1432);
-                PORTB = PORTB & ~(1 << PORTB1);
-                _delay_us(1432);
-            // }
-        }
-        else if(PIND & (1 << PD2))
-        {
-            // for(uint8_t i = 0; i < 100; i++)
-            // {
-                PORTB = PORTB | (1 << PORTB1);
-                _delay_us(716);
-                PORTB = PORTB & ~(1 << PORTB1);
-                _delay_us(716);
-            // }
-        }
+
+
+
+
+
+        // if(PIND & (1 << PD4))
+        // {
+        //     long_tone();
+        // }
+        // else if(PIND & (1 << PD2))
+        // {
+        //     short_tone();
+        // }
 
 
     }
@@ -65,4 +88,20 @@ int main(void)
 
 
     return 0;
+}
+
+void short_tone(void)
+{
+    PORTB = PORTB | (1 << PORTB1);
+    _delay_us(1432);
+    PORTB = PORTB & ~(1 << PORTB1);
+    _delay_us(1432);
+}
+
+void long_tone(void)
+{
+    PORTB = PORTB | (1 << PORTB1);
+    _delay_us(716);
+    PORTB = PORTB & ~(1 << PORTB1);
+    _delay_us(716);
 }
